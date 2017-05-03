@@ -559,7 +559,7 @@ namespace NAudio.Win8.Wave.WaveOutputs
         }
     }
 
-    [ComImport, InterfaceType(ComInterfaceType.InterfaceIsIUnknown), Guid("41D949AB-9862-444A-80F6-C261334DA5EB"), ComVisible(true)]
+    [ComImport, InterfaceType(ComInterfaceType.InterfaceIsIUnknown), Guid("41D949AB-9862-444A-80F6-C261334DA5EB")]
     interface IActivateAudioInterfaceCompletionHandler
     {
         //virtual HRESULT STDMETHODCALLTYPE ActivateCompleted(/*[in]*/ _In_  

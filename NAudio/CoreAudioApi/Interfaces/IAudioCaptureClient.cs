@@ -7,7 +7,7 @@ namespace NAudio.CoreAudioApi.Interfaces
 {
 
 
-    [Guid("C8ADBD64-E71E-48a0-A4DE-185C395CD317"),
+    [ComImport, Guid("C8ADBD64-E71E-48a0-A4DE-185C395CD317"),
      InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     interface IAudioCaptureClient
     {
@@ -26,7 +26,7 @@ namespace NAudio.CoreAudioApi.Interfaces
             out long devicePosition,
             out long qpcPosition);
 
-        int ReleaseBuffer([In] int numFramesRead);
+        int ReleaseBuffer(int numFramesRead);
 
         int GetNextPacketSize(out int numFramesInNextPacket);
 

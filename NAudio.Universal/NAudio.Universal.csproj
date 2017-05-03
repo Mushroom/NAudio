@@ -237,9 +237,6 @@
     <Compile Include="..\NAudio\CoreAudioApi\Interfaces\IAudioCaptureClient.cs">
       <Link>CoreAudioApi\Interfaces\IAudioCaptureClient.cs</Link>
     </Compile>
-    <Compile Include="..\NAudio\CoreAudioApi\Interfaces\IAudioClient.cs">
-      <Link>CoreAudioApi\Interfaces\IAudioClient.cs</Link>
-    </Compile>
     <Compile Include="..\NAudio\CoreAudioApi\Interfaces\IAudioClock2.cs">
       <Link>CoreAudioApi\Interfaces\IAudioClock2.cs</Link>
     </Compile>
