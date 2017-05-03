@@ -6,6 +6,21 @@ using NAudio.Dmo;
 
 namespace NAudio.Wave
 {
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi, Pack = 2)]
+    public struct WaveFormatExtensibleInterop
+    {
+        public WaveFormatEncoding waveFormatTag;
+        public short channels;
+        public int sampleRate;
+        public int averageBytesPerSecond;
+        public short blockAlign;
+        public short bitsPerSample;
+        public short extraSize;
+        public short wValidBitsPerSample; // bits of precision, or is wSamplesPerBlock if wBitsPerSample==0
+        public int dwChannelMask; // which channels are present in stream
+        public Guid subFormat;
+    }
+
     /// <summary>
     /// WaveFormatExtensible
     /// http://www.microsoft.com/whdc/device/audio/multichaud.mspx
@@ -95,6 +110,45 @@ namespace NAudio.Wave
                 dwChannelMask,
                 subFormat,
                 extraSize);
+        }
+
+        public override WaveFormatExtensibleInterop AsInterop()
+        {
+            return this;
+        }
+
+        public static implicit operator WaveFormatExtensibleInterop(WaveFormatExtensible o)
+        {
+            return new WaveFormatExtensibleInterop()
+            {
+                averageBytesPerSecond = o.averageBytesPerSecond,
+                bitsPerSample = o.bitsPerSample,
+                blockAlign = o.blockAlign,
+                channels = o.channels,
+                dwChannelMask = o.dwChannelMask,
+                extraSize = o.extraSize,
+                sampleRate = o.sampleRate,
+                subFormat = o.subFormat,
+                waveFormatTag = o.waveFormatTag,
+                wValidBitsPerSample = o.wValidBitsPerSample
+            };
+        }
+
+        public static implicit operator WaveFormatExtensible(WaveFormatExtensibleInterop o)
+        {
+            return new WaveFormatExtensible()
+            {
+                averageBytesPerSecond = o.averageBytesPerSecond,
+                bitsPerSample = o.bitsPerSample,
+                blockAlign = o.blockAlign,
+                channels = o.channels,
+                dwChannelMask = o.dwChannelMask,
+                extraSize = o.extraSize,
+                sampleRate = o.sampleRate,
+                subFormat = o.subFormat,
+                waveFormatTag = o.waveFormatTag,
+                wValidBitsPerSample = o.wValidBitsPerSample
+            };
         }
     }
 }

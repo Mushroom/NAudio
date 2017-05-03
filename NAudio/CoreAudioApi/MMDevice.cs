@@ -25,6 +25,7 @@
 using System;
 using NAudio.CoreAudioApi.Interfaces;
 using System.Runtime.InteropServices;
+using NAudio.Win8.Wave.WaveOutputs;
 
 namespace NAudio.CoreAudioApi
 {
@@ -60,7 +61,7 @@ namespace NAudio.CoreAudioApi
         {
             object result;
             Marshal.ThrowExceptionForHR(deviceInterface.Activate(ref IID_IAudioClient, ClsCtx.ALL, IntPtr.Zero, out result));
-            return new AudioClient(result as IAudioClient);
+            return new AudioClient(result as IAudioClient2);
         }
 
         private void GetAudioMeterInformation()

@@ -127,7 +127,7 @@ namespace NAudio.Win8.Wave.WaveOutputs
             IActivateAudioInterfaceAsyncOperation activationOperation;
             NativeMethods.ActivateAudioInterfaceAsync(device, IID_IAudioClient2, IntPtr.Zero, icbh, out activationOperation);
             var audioClient2 = await icbh;
-            this.audioClient = new AudioClient((IAudioClient)audioClient2);
+            this.audioClient = new AudioClient((IAudioClient2)audioClient2);
         }
 
         private static string GetDefaultAudioEndpoint()
@@ -559,7 +559,7 @@ namespace NAudio.Win8.Wave.WaveOutputs
         }
     }
 
-    [ComImport, InterfaceType(ComInterfaceType.InterfaceIsIUnknown), Guid("41D949AB-9862-444A-80F6-C261334DA5EB")]
+    [ComImport, InterfaceType(ComInterfaceType.InterfaceIsIUnknown), Guid("41D949AB-9862-444A-80F6-C261334DA5EB"), ComVisible(true)]
     interface IActivateAudioInterfaceCompletionHandler
     {
         //virtual HRESULT STDMETHODCALLTYPE ActivateCompleted(/*[in]*/ _In_  
@@ -586,8 +586,9 @@ namespace NAudio.Win8.Wave.WaveOutputs
                        AudioClientStreamFlags streamFlags,
                        long hnsBufferDuration, // REFERENCE_TIME
                        long hnsPeriodicity, // REFERENCE_TIME
-                       [In] WaveFormat pFormat,
-                       [In] IntPtr audioSessionGuid);
+                       //[In] WaveFormat pFormat,
+                       [In] ref WaveFormatExtensibleInterop pFormat,
+                       [In] ref Guid audioSessionGuid);
 
         // ref Guid AudioSessionGuid
 
@@ -604,8 +605,9 @@ namespace NAudio.Win8.Wave.WaveOutputs
         [PreserveSig]
         int IsFormatSupported(
             AudioClientShareMode shareMode,
-            [In] WaveFormat pFormat,
-            out IntPtr closestMatchFormat);
+            //[In] WaveFormat pFormat,
+            [In] ref WaveFormatExtensibleInterop pFormat,
+            IntPtr closestMatchFormat);
 
         int GetMixFormat(out IntPtr deviceFormatPointer);
 

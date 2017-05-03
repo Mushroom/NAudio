@@ -37,5 +37,9 @@ namespace NAudio.CoreAudioApi
         /// Background audio for games.
         /// </summary>
         GameMedia,
+        /// <summary>
+        /// Game chat audio
+        /// </summary>
+        GameChat
     }
 }

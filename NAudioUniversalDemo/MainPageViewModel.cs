@@ -54,6 +54,7 @@ namespace NAudioUniversalDemo
             {
                 // Exclusive mode - fails with a weird buffer alignment error
                 player = new WasapiOutRT(AudioClientShareMode.Shared, 200);
+                //((WasapiOutRT)player).SetClientProperties(false, AudioStreamCategory.GameChat, AudioClientStreamOptions.None);
                 player.Init(CreateReader);
 
                 player.PlaybackStopped += PlayerOnPlaybackStopped;
@@ -85,6 +86,7 @@ namespace NAudioUniversalDemo
             if (recorder == null)
             {
                 recorder = new WasapiCaptureRT();
+                //((WasapiCaptureRT)recorder).SetClientProperties(false, AudioStreamCategory.GameChat, AudioClientStreamOptions.None);
                 recorder.RecordingStopped += RecorderOnRecordingStopped;
                 recorder.DataAvailable += RecorderOnDataAvailable;               
             }

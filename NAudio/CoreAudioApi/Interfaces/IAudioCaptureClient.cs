@@ -26,7 +26,7 @@ namespace NAudio.CoreAudioApi.Interfaces
             out long devicePosition,
             out long qpcPosition);
 
-        int ReleaseBuffer(int numFramesRead);
+        int ReleaseBuffer([In] int numFramesRead);
 
         int GetNextPacketSize(out int numFramesInNextPacket);
 

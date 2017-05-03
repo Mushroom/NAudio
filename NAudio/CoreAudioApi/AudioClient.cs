@@ -3,6 +3,7 @@ using NAudio.CoreAudioApi.Interfaces;
 using System.Runtime.InteropServices;
 using NAudio.Utils;
 using NAudio.Wave;
+using NAudio.Win8.Wave.WaveOutputs;
 
 namespace NAudio.CoreAudioApi
 {
@@ -11,7 +12,7 @@ namespace NAudio.CoreAudioApi
     /// </summary>
     public class AudioClient : IDisposable
     {
-        private IAudioClient audioClientInterface;
+        private IAudioClient2 audioClientInterface;
         private WaveFormat mixFormat;
         private AudioRenderClient audioRenderClient;
         private AudioCaptureClient audioCaptureClient;
@@ -19,7 +20,7 @@ namespace NAudio.CoreAudioApi
         private AudioStreamVolume audioStreamVolume;
         private AudioClientShareMode shareMode;
 
-        internal AudioClient(IAudioClient audioClientInterface)
+        internal AudioClient(IAudioClient2 audioClientInterface)
         {
             this.audioClientInterface = audioClientInterface;
         }
@@ -61,7 +62,9 @@ namespace NAudio.CoreAudioApi
             Guid audioSessionGuid)
         {
             this.shareMode = shareMode;
-            int hresult = audioClientInterface.Initialize(shareMode, streamFlags, bufferDuration, periodicity, waveFormat, ref audioSessionGuid);
+            //int hresult = audioClientInterface.Initialize(shareMode, streamFlags, bufferDuration, periodicity, waveFormat, ref audioSessionGuid);
+            var pFormat = waveFormat.AsInterop();
+            int hresult = audioClientInterface.Initialize(shareMode, streamFlags, bufferDuration, periodicity, ref pFormat, ref audioSessionGuid);
             Marshal.ThrowExceptionForHR(hresult);
             // may have changed the mix format so reset it
             mixFormat = null;
@@ -250,13 +253,16 @@ namespace NAudio.CoreAudioApi
         {
             IntPtr pointerToPtr = GetPointerToPointer(); // IntPtr.Zero; // Marshal.AllocHGlobal(Marshal.SizeOf<WaveFormatExtensible>());
             closestMatchFormat = null;
-            int hresult = audioClientInterface.IsFormatSupported(shareMode, desiredFormat, pointerToPtr);
+            //int hresult = audioClientInterface.IsFormatSupported(shareMode, desiredFormat, pointerToPtr);
+            var pDesiredFormat = desiredFormat.AsInterop();
+            int hresult = audioClientInterface.IsFormatSupported(shareMode, ref pDesiredFormat, pointerToPtr);
 
             var closestMatchPtr = MarshalHelpers.PtrToStructure<IntPtr>(pointerToPtr);
 
             if (closestMatchPtr != IntPtr.Zero)
             {
-                closestMatchFormat = MarshalHelpers.PtrToStructure<WaveFormatExtensible>(closestMatchPtr);
+                //closestMatchFormat = MarshalHelpers.PtrToStructure<WaveFormatExtensible>(closestMatchPtr);
+                closestMatchFormat = MarshalHelpers.PtrToStructure<WaveFormatExtensibleInterop>(closestMatchPtr);
                 Marshal.FreeCoTaskMem(closestMatchPtr);
             }
             Marshal.FreeHGlobal(pointerToPtr);

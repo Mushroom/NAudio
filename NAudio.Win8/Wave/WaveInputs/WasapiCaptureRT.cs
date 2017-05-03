@@ -11,6 +11,8 @@ using System.Runtime.InteropServices;
 using NAudio.Win8.Wave.WaveOutputs;
 using Windows.Devices.Enumeration;
 using Windows.Media.Devices;
+using NAudio.Utils;
+using NativeMethods = NAudio.Win8.Wave.WaveOutputs.NativeMethods;
 
 namespace NAudio.Wave
 {
@@ -51,6 +53,12 @@ namespace NAudio.Wave
         /// </summary>
         public event EventHandler<StoppedEventArgs> RecordingStopped;
         private int latencyMilliseconds;
+
+        /// <summary>
+        /// Properties of the client's audio stream.
+        /// Set before calling init
+        /// </summary>
+        private AudioClientProperties? audioClientProperties = null;
 
         /// <summary>
         /// Initialises a new instance of the WASAPI capture class
@@ -130,22 +138,46 @@ namespace NAudio.Wave
         {
             if (captureState == WasapiCaptureState.Disposed) throw new ObjectDisposedException(nameof(WasapiCaptureRT));
             if (captureState != WasapiCaptureState.Uninitialized) throw new InvalidOperationException("Already initialized");
-            
-            var icbh = new ActivateAudioInterfaceCompletionHandler(ac2 => InitializeCaptureDevice((IAudioClient)ac2));
+
+/*            var icbh = new ActivateAudioInterfaceCompletionHandler(ac2 => InitializeCaptureDevice((IAudioClient)ac2));
+              IActivateAudioInterfaceAsyncOperation activationOperation;
+              // must be called on UI thread
+              NativeMethods.ActivateAudioInterfaceAsync(device, IID_IAudioClient2, IntPtr.Zero, icbh, out activationOperation);
+
+              audioClient = new AudioClient((IAudioClient)(await icbh));
+
+              hEvent = NativeMethods.CreateEventExW(IntPtr.Zero, IntPtr.Zero, 0, EventAccess.EVENT_ALL_ACCESS);
+              audioClient.SetEventHandle(hEvent);*/
+
+            var icbh = new ActivateAudioInterfaceCompletionHandler(ac2 =>
+            {
+                if (this.audioClientProperties != null)
+                {
+                    IntPtr p = Marshal.AllocHGlobal(Marshal.SizeOf(this.audioClientProperties.Value));
+                    Marshal.StructureToPtr(this.audioClientProperties.Value, p, false);
+                    ac2.SetClientProperties(p);
+                    Marshal.FreeHGlobal(p);
+                    // TODO: consider whether we can marshal this without the need for AllocHGlobal
+                }
+
+                InitializeCaptureDevice((IAudioClient2)ac2);
+                audioClient = new AudioClient((IAudioClient2)ac2);
+
+                hEvent = NativeMethods.CreateEventExW(IntPtr.Zero, IntPtr.Zero, 0, EventAccess.EVENT_ALL_ACCESS);
+                audioClient.SetEventHandle(hEvent);
+            });
+
             IActivateAudioInterfaceAsyncOperation activationOperation;
             // must be called on UI thread
             NativeMethods.ActivateAudioInterfaceAsync(device, IID_IAudioClient2, IntPtr.Zero, icbh, out activationOperation);
-            audioClient = new AudioClient((IAudioClient)(await icbh));
-
-            hEvent = NativeMethods.CreateEventExW(IntPtr.Zero, IntPtr.Zero, 0, EventAccess.EVENT_ALL_ACCESS);
-            audioClient.SetEventHandle(hEvent);
+            await icbh;
 
             captureState = WasapiCaptureState.Stopped;
         }
 
-        private void InitializeCaptureDevice(IAudioClient audioClientInterface)
+        private void InitializeCaptureDevice(IAudioClient2 audioClientInterface)
         {
-            var audioClient = new AudioClient((IAudioClient)audioClientInterface);
+            var audioClient = new AudioClient((IAudioClient2)audioClientInterface);
             if (waveFormat == null)
             {                
                 waveFormat = audioClient.MixFormat;
@@ -176,6 +208,23 @@ namespace NAudio.Wave
 
             // Get back the effective latency from AudioClient
             latencyMilliseconds = (int)(audioClient.StreamLatency / 10000);
+        }
+
+        /// <summary>
+        /// Sets the parameters that describe the properties of the client's audio stream.
+        /// </summary>
+        /// <param name="useHardwareOffload">Boolean value to indicate whether or not the audio stream is hardware-offloaded.</param>
+        /// <param name="category">An enumeration that is used to specify the category of the audio stream.</param>
+        /// <param name="options">A bit-field describing the characteristics of the stream. Supported in Windows 8.1 and later.</param>
+        public void SetClientProperties(bool useHardwareOffload, AudioStreamCategory category, AudioClientStreamOptions options)
+        {
+            audioClientProperties = new AudioClientProperties()
+            {
+                cbSize = (uint)MarshalHelpers.SizeOf<AudioClientProperties>(),
+                bIsOffload = Convert.ToInt32(useHardwareOffload),
+                eCategory = category,
+                Options = options
+            };
         }
 
         /// <summary>

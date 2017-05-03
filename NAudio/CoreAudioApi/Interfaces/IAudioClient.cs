@@ -2,6 +2,7 @@
 using System.Runtime.InteropServices;
 using NAudio.Wave;
 
+/*
 namespace NAudio.CoreAudioApi.Interfaces
 {
     /// <summary>
@@ -10,7 +11,7 @@ namespace NAudio.CoreAudioApi.Interfaces
     /// </summary>
     [Guid("1CB9AD4C-DBFA-4c32-B178-C2F568A703B2"), 
         InterfaceType(ComInterfaceType.InterfaceIsIUnknown),
-        ComImport]
+        ComImport, ComVisible(true)]
     internal interface IAudioClient
     {
         [PreserveSig]
@@ -18,7 +19,8 @@ namespace NAudio.CoreAudioApi.Interfaces
             AudioClientStreamFlags streamFlags,
             long hnsBufferDuration, // REFERENCE_TIME
             long hnsPeriodicity, // REFERENCE_TIME
-            [In] WaveFormat pFormat,
+            //[In] WaveFormat pFormat,
+            [In] ref WaveFormatExtensibleInterop pFormat,
             [In] ref Guid audioSessionGuid);
 
         /// <summary>
@@ -34,7 +36,8 @@ namespace NAudio.CoreAudioApi.Interfaces
         [PreserveSig]
         int IsFormatSupported(
             AudioClientShareMode shareMode,
-            [In] WaveFormat pFormat,
+            //[In] WaveFormat pFormat,
+            [In] ref WaveFormatExtensibleInterop pFormat,
             IntPtr closestMatchFormat);
 
         int GetMixFormat(out IntPtr deviceFormatPointer);
@@ -59,3 +62,4 @@ namespace NAudio.CoreAudioApi.Interfaces
         int GetService([In, MarshalAs(UnmanagedType.LPStruct)] Guid interfaceId, [Out, MarshalAs(UnmanagedType.IUnknown)] out object interfacePointer);
     }
 }
+*/
