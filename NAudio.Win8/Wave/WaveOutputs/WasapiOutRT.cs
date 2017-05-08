@@ -154,7 +154,7 @@ namespace NAudio.Win8.Wave.WaveOutputs
                 bufferFrameCount = audioClient.BufferSize;
                 bytesPerFrame = outputFormat.Channels*outputFormat.BitsPerSample/8;
                 readBuffer = new byte[bufferFrameCount*bytesPerFrame];
-                FillBuffer(playbackProvider, bufferFrameCount);
+                FillBuffer(playbackProvider, bufferFrameCount, outputFormat.Channels, playbackProvider.WaveFormat.Channels, playbackProvider.WaveFormat.BitsPerSample);
                 int timeout = 3 * latencyMilliseconds;
                 
                 while (playbackState != WasapiOutState.Disposed)
@@ -183,7 +183,7 @@ namespace NAudio.Win8.Wave.WaveOutputs
                         int numFramesAvailable = bufferFrameCount - numFramesPadding;
                         if (numFramesAvailable > 0)
                         {
-                            FillBuffer(playbackProvider, numFramesAvailable);
+                            FillBuffer(playbackProvider, numFramesAvailable, outputFormat.Channels, playbackProvider.WaveFormat.Channels, playbackProvider.WaveFormat.BitsPerSample);
                         }
                     }
 
@@ -245,21 +245,70 @@ namespace NAudio.Win8.Wave.WaveOutputs
             }
         }
 
-        private void FillBuffer(IWaveProvider playbackProvider, int frameCount)
+        private void FillBuffer(IWaveProvider playbackProvider, int frameCount, int requestedChannelCount, int providedChannelCount, int providedBitsPerSample)
         {
             IntPtr buffer = renderClient.GetBuffer(frameCount);
-            int readLength = frameCount*bytesPerFrame;
-            int read = playbackProvider.Read(readBuffer, 0, readLength);
+            //bytesPerFrame = outputFormat.Channels*outputFormat.BitsPerSample/8;
+            int desiredReadLength = frameCount*bytesPerFrame;
+            int providableBytesPerFrame = providedChannelCount * providedBitsPerSample / 8;
+            int providableReadLength = frameCount * providableBytesPerFrame;
+            int read = playbackProvider.Read(readBuffer, 0, providableReadLength);
+            int actualFrameCount;
             if (read == 0)
             {
                 playbackState = WasapiOutState.Stopping;
+                actualFrameCount = 0;
             }
-            Marshal.Copy(readBuffer, 0, buffer, read);
-            int actualFrameCount = read/bytesPerFrame;
-            /*if (actualFrameCount != frameCount)
+            else if (requestedChannelCount != providedChannelCount)
             {
-                Debug.WriteLine(String.Format("WASAPI wanted {0} frames, supplied {1}", frameCount, actualFrameCount ));
-            }*/
+                if (requestedChannelCount < providedChannelCount) //There are more channels provided than requested
+                {
+                    byte[] newReadBuffer = new byte[providableReadLength];
+                    int currentWrittenChannels = 0;
+                    int unusedChannelsOffset = 0;
+                    int i;
+                    for (i = 0; i < read; i++)
+                    {
+                        if (currentWrittenChannels >= requestedChannelCount)
+                        {
+                            unusedChannelsOffset += providedChannelCount - currentWrittenChannels;
+                            currentWrittenChannels = 0;
+                        }
+
+                        newReadBuffer[i] = readBuffer[i + unusedChannelsOffset];
+                    }
+
+                    Marshal.Copy(newReadBuffer, 0, buffer, i);
+                    actualFrameCount = i / bytesPerFrame;
+                }
+                else // if (providedChannelCount < requestedChannelCount) (There are less channels provided than are requested, space out the data accordingly in the buffer)
+                {
+                    byte[] newReadBuffer = new byte[desiredReadLength];
+                    int unusedChannelsOffset = 0;
+                    int currentWrittenChannels = 0;
+                    int i;
+                    for (i = 0; i < read; i++)
+                    {
+                        if (currentWrittenChannels >= providedChannelCount)
+                        {
+                            unusedChannelsOffset += requestedChannelCount - providedChannelCount;
+                            currentWrittenChannels = 0;
+                        }
+
+                        newReadBuffer[i + unusedChannelsOffset] = readBuffer[i];
+                        currentWrittenChannels++;
+                    }
+
+                    Marshal.Copy(newReadBuffer, 0, buffer, i + unusedChannelsOffset + requestedChannelCount - providedChannelCount); //We have provided 
+                    actualFrameCount = (i + unusedChannelsOffset + requestedChannelCount - providedChannelCount) / bytesPerFrame;
+                }
+            }
+            else
+            {
+                 Marshal.Copy(readBuffer, 0, buffer, read);
+                 actualFrameCount = read/bytesPerFrame;
+            }
+
             renderClient.ReleaseBuffer(actualFrameCount, AudioClientBufferFlags.None);
         }
 
