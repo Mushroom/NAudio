@@ -39,6 +39,7 @@ namespace NAudio.Win8.Wave.WaveOutputs
         private int bufferFrameCount;
         private int bytesPerFrame;
         private byte[] readBuffer;
+        private byte[] newReadBuffer;
         private volatile WasapiOutState playbackState;
         private WaveFormat outputFormat;
         private bool resamplerNeeded;
@@ -153,7 +154,11 @@ namespace NAudio.Win8.Wave.WaveOutputs
                 // fill a whole buffer
                 bufferFrameCount = audioClient.BufferSize;
                 bytesPerFrame = outputFormat.Channels*outputFormat.BitsPerSample/8;
-                readBuffer = new byte[bufferFrameCount*bytesPerFrame];
+                //readBuffer = new byte[bufferFrameCount*bytesPerFrame];
+                int desiredReadLength = bufferFrameCount * bytesPerFrame;
+                int providableReadLength = bufferFrameCount * playbackProvider.WaveFormat.Channels * playbackProvider.WaveFormat.BitsPerSample / 8;
+                readBuffer = new byte[providableReadLength];
+                newReadBuffer = new byte[desiredReadLength > providableReadLength ? desiredReadLength : providableReadLength];
                 FillBuffer(playbackProvider, bufferFrameCount, outputFormat.Channels, playbackProvider.WaveFormat.Channels, playbackProvider.WaveFormat.BitsPerSample);
                 int timeout = 3 * latencyMilliseconds;
                 
@@ -250,8 +255,8 @@ namespace NAudio.Win8.Wave.WaveOutputs
             IntPtr buffer = renderClient.GetBuffer(frameCount);
             //bytesPerFrame = outputFormat.Channels*outputFormat.BitsPerSample/8;
             int desiredReadLength = frameCount*bytesPerFrame;
-            int providableBytesPerFrame = providedChannelCount * providedBitsPerSample / 8;
-            int providableReadLength = frameCount * providableBytesPerFrame;
+            int providableReadLength = frameCount * providedChannelCount * providedBitsPerSample / 8;
+            //readBuffer = new byte[providableReadLength];
             int read = playbackProvider.Read(readBuffer, 0, providableReadLength);
             int actualFrameCount;
             if (read == 0)
@@ -263,7 +268,7 @@ namespace NAudio.Win8.Wave.WaveOutputs
             {
                 if (requestedChannelCount < providedChannelCount) //There are more channels provided than requested
                 {
-                    byte[] newReadBuffer = new byte[providableReadLength];
+                    //byte[] newReadBuffer = new byte[providableReadLength];
                     int currentWrittenChannels = 0;
                     int unusedChannelsOffset = 0;
                     int i;
@@ -283,7 +288,7 @@ namespace NAudio.Win8.Wave.WaveOutputs
                 }
                 else // if (providedChannelCount < requestedChannelCount) (There are less channels provided than are requested, space out the data accordingly in the buffer)
                 {
-                    byte[] newReadBuffer = new byte[desiredReadLength];
+                    //byte[] newReadBuffer = new byte[desiredReadLength];
                     int unusedChannelsOffset = 0;
                     int currentWrittenChannels = 0;
                     int i;
@@ -310,6 +315,8 @@ namespace NAudio.Win8.Wave.WaveOutputs
             }
 
             renderClient.ReleaseBuffer(actualFrameCount, AudioClientBufferFlags.None);
+            Array.Clear(readBuffer, 0, read);
+            Array.Clear(newReadBuffer, 0, newReadBuffer.Length);
         }
 
         #region IWavePlayer Members
@@ -441,6 +448,14 @@ namespace NAudio.Win8.Wave.WaveOutputs
                 }
                 else
                 {
+                    if (closestSampleRateFormat.Channels == 1 && outputFormat.Channels == 2)
+                        {
+                            var downmixer = new StereoToMonoProvider16(waveProvider);
+                            downmixer.LeftVolume = 0.5F;
+                            downmixer.RightVolume = 0.5F;
+                            waveProvider = downmixer;
+                        }
+
                     outputFormat = closestSampleRateFormat;
                 }
 
